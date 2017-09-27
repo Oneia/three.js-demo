@@ -1,1 +1,5 @@
-export const test = () => console.log('haha');
+export class App {
+    constructor() {
+
+    }
+}
