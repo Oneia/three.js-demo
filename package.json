@@ -19,6 +19,5 @@
     "three": "^0.87.1",
     "three-orbitcontrols": "^1.2.1",
     "three-trackballcontrols": "0.0.6",
-    "three.js": "^0.77.1"
   }
 }

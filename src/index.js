@@ -6,76 +6,132 @@ import {
   MeshPhongMaterial,
   PerspectiveCamera,
   Scene,
-  WebGLRenderer, SpotLight, PCFSoftShadowMap, SpotLightHelper,
-  CameraHelper, AmbientLight, AxisHelper,
+  WebGLRenderer,
+  SpotLight,
+  PCFSoftShadowMap,
+  SpotLightHelper,
+  CameraHelper,
+  AmbientLight,
+  AxisHelper,
+  TetrahedronGeometry,
+  MeshBasicMaterial,
 } from 'three';
 
+class AppThreeDemo {
 
-var renderer, scene, camera;
-var spotLight, lightHelper, shadowCameraHelper;
-function init() {
-  renderer = new WebGLRenderer();
-  renderer.setPixelRatio( window.devicePixelRatio );
-  renderer.setSize( window.innerWidth, window.innerHeight );
-  document.body.appendChild( renderer.domElement );
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFSoftShadowMap;
-  renderer.gammaInput = true;
-  renderer.gammaOutput = true;
-  scene = new Scene();
-  camera = new PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 1000 );
-  camera.position.set( 65, 8, - 10 );
-  var controls = new OrbitControls( camera, renderer.domElement );
-  controls.addEventListener( 'change', render );
-  controls.minDistance = 20;
-  controls.maxDistance = 500;
-  controls.enablePan = false;
-  var ambient = new AmbientLight( 0xffffff, 0.1 );
-  scene.add( ambient );
-  spotLight = new SpotLight( 0xffffff, 1 );
-  spotLight.position.set( 15, 40, 35 );
-  spotLight.angle = Math.PI / 4;
-  spotLight.penumbra = 0.05;
-  spotLight.decay = 2;
-  spotLight.distance = 200;
-  spotLight.castShadow = true;
-  spotLight.shadow.mapSize.width = 1024;
-  spotLight.shadow.mapSize.height = 1024;
-  spotLight.shadow.camera.near = 10;
-  spotLight.shadow.camera.far = 200;
-  scene.add( spotLight );
-  lightHelper = new SpotLightHelper( spotLight );
-  scene.add( lightHelper );
-  shadowCameraHelper = new CameraHelper( spotLight.shadow.camera );
-  scene.add( shadowCameraHelper );
-  scene.add( new AxisHelper( 10 ) );
-  var material = new MeshPhongMaterial( { color: 0x808080, dithering: true } );
-  var geometry = new BoxGeometry( 2000, 1, 2000 );
-  var mesh = new Mesh( geometry, material );
-  mesh.position.set( 0, - 1, 0 );
-  mesh.receiveShadow = true;
-  scene.add( mesh );
-  var material = new MeshPhongMaterial( { color: 0x4080ff, dithering: true } );
-  var geometry = new BoxGeometry( 3, 1, 2 );
-  var mesh = new Mesh( geometry, material );
-  mesh.position.set( 40, 2, 0 );
-  mesh.castShadow = true;
-  scene.add( mesh );
-  controls.target.copy( mesh.position );
-  controls.update();
-  window.addEventListener( 'resize', onResize, false );
-}
-function onResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize( window.innerWidth, window.innerHeight );
-}
-function render() {
-  lightHelper.update();
-  shadowCameraHelper.update();
-  renderer.render( scene, camera );
-}
+  constructor() {
+    this.with = window.innerWidth;
+    this.height = window.innerHeight;
+
+    this.createRenderer();
+    this.createScene();
+    this.addCamera();
+    this.addLight();
+    this.addMesh();
+    this.addCube();
+    this.addSphere();
+
+    this.render();
+  }
+
+  createRenderer() {
+    this.renderer = new WebGLRenderer();
+    this.renderer.setPixelRatio( window.devicePixelRatio );
+    this.renderer.setSize( this.with, this.height );
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.gammaInput = true;
+    this.renderer.gammaOutput = true;
+
+    // setInterval(() => {
+    //   this.pyra.rotation.x +=0.05;
+    //   this.pyra.rotation.z +=0.05;
+    //   this.renderer.render( this.scene, this.camera );
+    //   console.log('test');
+    // },40);
 
 
-init();
-render();
+
+    document.body.appendChild( this.renderer.domElement );
+  }
+
+  createScene() {
+    this.scene = new Scene();
+  }
+
+  addCamera() {
+    this.camera = new PerspectiveCamera( 35, this.with / this.height, 1, 1000 );
+    this.camera.position.set( 65, 100, 300 );
+    this.controls = new OrbitControls( this.camera, this.renderer.domElement );
+    this.controls.addEventListener( 'change', () => this.render());
+    this.controls.minDistance = 20;
+    this.controls.maxDistance = 500;
+    this.controls.enablePan = false;
+  }
+
+  addLight() {
+    const ambient = new AmbientLight( 0xffffff, 0.1 );
+    this.scene.add( ambient );
+    this.spotLight = new SpotLight( 0xffffff, 1 );
+    this.spotLight.position.set( 15, 40, 35 );
+    // this.spotLight.angle = Math.PI / 4;
+    // this.spotLight.penumbra = 0.05;
+    // this.spotLight.decay = 2;
+    // this.spotLight.distance = 200;
+    this.spotLight.castShadow = true;
+    // this.spotLight.shadow.mapSize.width = 1024;
+    // this.spotLight.shadow.mapSize.height = 1024;
+    // this.spotLight.shadow.camera.near = 10;
+    // this.spotLight.shadow.camera.far = 200;
+    this.scene.add( this.spotLight );
+    // this.lightHelper = new SpotLightHelper( this.spotLight );
+    // this.scene.add( this.lightHelper );
+    // this.shadowCameraHelper = new CameraHelper( this.spotLight.shadow.camera );
+    // this.scene.add( this.shadowCameraHelper );
+    // this.scene.add( new AxisHelper( 10 ) );
+  }
+
+  addMesh() {
+    const material = new MeshPhongMaterial( { color: 0x808080, dithering: true } );
+    const geometry = new BoxGeometry( 200, 1, 200 );
+    const mesh = new Mesh( geometry, material );
+    mesh.position.set( 0, - 40, 0 );
+    mesh.receiveShadow = true;
+    this.scene.add( mesh );
+  }
+
+  addCube() {
+    const material = new MeshPhongMaterial( { color: 0x4080ff, dithering: true } );
+    const geometry = new BoxGeometry( 3, 1, 2 );
+    const mesh = new Mesh( geometry, material );
+    mesh.position.set(40, 2, 0);
+    mesh.castShadow = true;
+    this.scene.add( mesh );
+    this.controls.target.copy( mesh.position );
+    this.controls.update();
+  }
+
+  addSphere() {
+    const pyremideGeom = new TetrahedronGeometry(5);
+    const matPyr = new MeshBasicMaterial({color: 'red'});
+    this.pyra = new Mesh(pyremideGeom, matPyr);
+    this.pyra.castShadow = true;
+    this.pyra.position.set(10, 2, 0);
+    this.scene.add(this.pyra);
+  }
+
+  render() {
+     requestAnimationFrame(() => this.render());
+
+    if (this.pyra) {
+      this.pyra.rotation.x +=0.05;
+      this.pyra.rotation.z +=0.05;
+    }
+    
+
+    this.renderer.render( this.scene, this.camera );
+  }
+
+}
+
+new AppThreeDemo();
