@@ -1,137 +1,173 @@
-import * as TrackballControls from 'three-trackballcontrols';
-import * as OrbitControls from 'three-orbitcontrols';
-import {
-  BoxGeometry,
-  Mesh,
-  MeshPhongMaterial,
-  PerspectiveCamera,
-  Scene,
-  WebGLRenderer,
-  SpotLight,
-  PCFSoftShadowMap,
-  SpotLightHelper,
-  CameraHelper,
-  AmbientLight,
-  AxisHelper,
-  TetrahedronGeometry,
-  MeshBasicMaterial,
-} from 'three';
+import * as GLMatrix from 'gl-matrix';
 
-class AppThreeDemo {
 
-  constructor() {
-    this.with = window.innerWidth;
-    this.height = window.innerHeight;
+var gl;
+var shaderProgram;
+var vertexBuffer; // буфер вершин
+var indexBuffer; //буфер индексов
+var colorBuffer; //буфер цветов
 
-    this.createRenderer();
-    this.createScene();
-    this.addCamera();
-    this.addLight();
-    this.addMesh();
-    this.addCube();
-    this.addSphere();
+var mvMatrix = GLMatrix.mat4.create();
+var pMatrix = GLMatrix.mat4.create();
+// установка шейдеров
+function initShaders() {
+  var fragmentShader = getShader(gl.FRAGMENT_SHADER, 'shader-fs');
+  var vertexShader = getShader(gl.VERTEX_SHADER, 'shader-vs');
 
-    this.render();
+  shaderProgram = gl.createProgram();
+
+  gl.attachShader(shaderProgram, vertexShader);
+  gl.attachShader(shaderProgram, fragmentShader);
+
+  gl.linkProgram(shaderProgram);
+
+  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+    alert("Не удалось установить шейдеры");
   }
 
-  createRenderer() {
-    this.renderer = new WebGLRenderer();
-    this.renderer.setPixelRatio( window.devicePixelRatio );
-    this.renderer.setSize( this.with, this.height );
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = PCFSoftShadowMap;
-    this.renderer.gammaInput = true;
-    this.renderer.gammaOutput = true;
+  gl.useProgram(shaderProgram);
 
-    // setInterval(() => {
-    //   this.pyra.rotation.x +=0.05;
-    //   this.pyra.rotation.z +=0.05;
-    //   this.renderer.render( this.scene, this.camera );
-    //   console.log('test');
-    // },40);
+  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+  gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+  shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "aVertexColor");
+  gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 
-
-
-    document.body.appendChild( this.renderer.domElement );
-  }
-
-  createScene() {
-    this.scene = new Scene();
-  }
-
-  addCamera() {
-    this.camera = new PerspectiveCamera( 35, this.with / this.height, 1, 1000 );
-    this.camera.position.set( 65, 100, 300 );
-    this.controls = new OrbitControls( this.camera, this.renderer.domElement );
-    this.controls.addEventListener( 'change', () => this.render());
-    this.controls.minDistance = 20;
-    this.controls.maxDistance = 500;
-    this.controls.enablePan = false;
-  }
-
-  addLight() {
-    const ambient = new AmbientLight( 0xffffff, 0.1 );
-    this.scene.add( ambient );
-    this.spotLight = new SpotLight( 0xffffff, 1 );
-    this.spotLight.position.set( 15, 40, 35 );
-    // this.spotLight.angle = Math.PI / 4;
-    // this.spotLight.penumbra = 0.05;
-    // this.spotLight.decay = 2;
-    // this.spotLight.distance = 200;
-    this.spotLight.castShadow = true;
-    // this.spotLight.shadow.mapSize.width = 1024;
-    // this.spotLight.shadow.mapSize.height = 1024;
-    // this.spotLight.shadow.camera.near = 10;
-    // this.spotLight.shadow.camera.far = 200;
-    this.scene.add( this.spotLight );
-    // this.lightHelper = new SpotLightHelper( this.spotLight );
-    // this.scene.add( this.lightHelper );
-    // this.shadowCameraHelper = new CameraHelper( this.spotLight.shadow.camera );
-    // this.scene.add( this.shadowCameraHelper );
-    // this.scene.add( new AxisHelper( 10 ) );
-  }
-
-  addMesh() {
-    const material = new MeshPhongMaterial( { color: 0x808080, dithering: true } );
-    const geometry = new BoxGeometry( 200, 1, 200 );
-    const mesh = new Mesh( geometry, material );
-    mesh.position.set( 0, - 40, 0 );
-    mesh.receiveShadow = true;
-    this.scene.add( mesh );
-  }
-
-  addCube() {
-    const material = new MeshPhongMaterial( { color: 0x4080ff, dithering: true } );
-    const geometry = new BoxGeometry( 3, 1, 2 );
-    const mesh = new Mesh( geometry, material );
-    mesh.position.set(40, 2, 0);
-    mesh.castShadow = true;
-    this.scene.add( mesh );
-    this.controls.target.copy( mesh.position );
-    this.controls.update();
-  }
-
-  addSphere() {
-    const pyremideGeom = new TetrahedronGeometry(5);
-    const matPyr = new MeshBasicMaterial({color: 'red'});
-    this.pyra = new Mesh(pyremideGeom, matPyr);
-    this.pyra.castShadow = true;
-    this.pyra.position.set(10, 2, 0);
-    this.scene.add(this.pyra);
-  }
-
-  render() {
-     requestAnimationFrame(() => this.render());
-
-    if (this.pyra) {
-      this.pyra.rotation.x +=0.05;
-      this.pyra.rotation.z +=0.05;
-    }
-    
-
-    this.renderer.render( this.scene, this.camera );
-  }
-
+  shaderProgram.MVMatrix = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+  shaderProgram.ProjMatrix = gl.getUniformLocation(shaderProgram, "uPMatrix");
 }
 
-new AppThreeDemo();
+function setMatrixUniforms(){
+  gl.uniformMatrix4fv(shaderProgram.ProjMatrix,false, pMatrix);
+  gl.uniformMatrix4fv(shaderProgram.MVMatrix, false, mvMatrix);
+}
+// Функция создания шейдера
+function getShader(type,id) {
+  var source = document.getElementById(id).innerHTML;
+
+  var shader = gl.createShader(type);
+
+  gl.shaderSource(shader, source);
+
+  gl.compileShader(shader);
+
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    alert("Ошибка компиляции шейдера: " + gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return null;
+  }
+  return shader;
+}
+// установка буферов вершин и индексов
+function initBuffers() {
+
+  var vertices =[
+    // лицевая часть
+    -0.5, -0.5, 0.5,
+    -0.5, 0.5, 0.5,
+    0.5, 0.5, 0.5,
+    0.5, -0.5, 0.5,
+    // задняя часть
+    -0.5, -0.5, -0.5,
+    -0.5, 0.5, -0.5,
+    0.5, 0.5, -0.5,
+    0.5, -0.5, -0.5
+  ];
+
+  var indices = [ // лицевая часть
+    0, 1, 2,
+    2, 3, 0,
+    //нижняя часть
+    0, 4, 7,
+    7, 3, 0,
+    // левая боковая часть
+    0, 1, 5,
+    5, 4, 0,
+    // правая боковая часть
+    2, 3, 7,
+    7, 6, 2,
+    // верхняя часть
+    2, 1, 6,
+    6, 5, 1,
+    // задняя часть
+    4, 5, 6,
+    6, 7, 4,
+  ];
+
+  // установка буфера вершин
+  vertexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  vertexBuffer.itemSize = 3;
+
+  // создание буфера индексов
+  indexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+  // указываем число индексов это число равно числу индексов
+  indexBuffer.numberOfItems = indices.length;
+
+  // установка цветов для каждой вершины
+  var сolors = [
+    0.0, 0.0, 0.3,
+    0.0, 0.0, 1.0,
+    0.0, 1.0, 0.0,
+    0.0, 0.3, 0.0,
+
+    0.0, 0.0, 0.3,
+    0.0, 0.0, 1.0,
+    0.0, 1.0, 0.0,
+    0.0, 0.3, 0.0
+  ];
+  colorBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(сolors), gl.STATIC_DRAW);
+}
+
+function draw() {
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,
+    vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+  gl.vertexAttribPointer(shaderProgram.vertexColorAttribute,
+    vertexBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+  gl.enable(gl.DEPTH_TEST);
+
+  gl.drawElements(gl.TRIANGLES, indexBuffer.numberOfItems, gl.UNSIGNED_SHORT,0);
+}
+function setupWebGL()
+{
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.clear(gl.COLOR_BUFFER_BIT || gl.DEPTH_BUFFER_BIT);
+
+  gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+  GLMatrix.mat4.perspective(pMatrix, 1.04, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
+  GLMatrix.mat4.identity(mvMatrix);
+  GLMatrix.mat4.translate(mvMatrix,mvMatrix,[0, 0, -2.0]);
+  GLMatrix.mat4.rotate(mvMatrix,mvMatrix, 2.0, [0, 1, 0]);
+}
+
+window.onload=function(){
+
+  var canvas = document.getElementById("canvas3D");
+  try {
+    gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+  }
+  catch(e) {}
+
+  if (!gl) {
+    alert("Ваш браузер не поддерживает WebGL");
+  }
+  if(gl){
+    gl.viewportWidth = canvas.width;
+    gl.viewportHeight = canvas.height;
+
+    initShaders();
+    initBuffers();
+    setupWebGL();
+    setMatrixUniforms();
+    draw();
+  }
+}

@@ -15,9 +15,10 @@
     "webpack-dev-server": "^2.8.2"
   },
   "dependencies": {
+    "gl-matrix": "^2.4.0",
     "html-webpack-plugin": "^2.30.1",
     "three": "^0.87.1",
     "three-orbitcontrols": "^1.2.1",
-    "three-trackballcontrols": "0.0.6",
+    "three-trackballcontrols": "0.0.6"
   }
 }
