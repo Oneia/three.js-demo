@@ -1,137 +1,85 @@
-import * as TrackballControls from 'three-trackballcontrols';
-import * as OrbitControls from 'three-orbitcontrols';
-import {
-  BoxGeometry,
-  Mesh,
-  MeshPhongMaterial,
-  PerspectiveCamera,
-  Scene,
-  WebGLRenderer,
-  SpotLight,
-  PCFSoftShadowMap,
-  SpotLightHelper,
-  CameraHelper,
-  AmbientLight,
-  AxisHelper,
-  TetrahedronGeometry,
-  MeshBasicMaterial,
-} from 'three';
-
-class AppThreeDemo {
+class AppWebGlTrianthis {
 
   constructor() {
-    this.with = window.innerWidth;
-    this.height = window.innerHeight;
-
-    this.createRenderer();
-    this.createScene();
-    this.addCamera();
-    this.addLight();
-    this.addMesh();
-    this.addCube();
-    this.addSphere();
-
-    this.render();
+    const canvas = document.getElementById("canvas3D");
+    this.gl = canvas.getContext("webgl");
+    this.gl.viewportWidth = canvas.width;
+    this.gl.viewportHeight = canvas.height;
+    // установка шейдеров
+    this.initShaders();
+    // установка буфера вершин
+    this.initBuffers();
+    // покрасим в красный цвет фон
+    this.gl.clearColor(1.0, 0.0, 0.0, 1.0);
+    // отрисовка сцены
+    this.draw();
   }
 
-  createRenderer() {
-    this.renderer = new WebGLRenderer();
-    this.renderer.setPixelRatio( window.devicePixelRatio );
-    this.renderer.setSize( this.with, this.height );
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = PCFSoftShadowMap;
-    this.renderer.gammaInput = true;
-    this.renderer.gammaOutput = true;
+  // Установка конструктора
+  initShaders() {
+    const fragmentShader = this.getShader(this.gl.FRAGMENT_SHADER, 'shader-fs');
+    const vertexShader = this.getShader(this.gl.VERTEX_SHADER, 'shader-vs');
 
-    // setInterval(() => {
-    //   this.pyra.rotation.x +=0.05;
-    //   this.pyra.rotation.z +=0.05;
-    //   this.renderer.render( this.scene, this.camera );
-    //   console.log('test');
-    // },40);
+    //создаем объект программы шейдеров
+    this.shaderProgram = this.gl.createProgram();
+    // прикрепляем к ней шейдеры
+    this.gl.attachShader(this.shaderProgram, vertexShader);
+    this.gl.attachShader(this.shaderProgram, fragmentShader);
+    // связываем программу с контекстом webgl
+    this.gl.linkProgram(this.shaderProgram);
 
-
-
-    document.body.appendChild( this.renderer.domElement );
+    this.gl.useProgram(this.shaderProgram);
+    // установка атрибута программы
+    this.shaderProgram.vertexPositionAttribute = this.gl.getAttribLocation(this.shaderProgram, "aVertexPosition");
+    // подключаем атрибут для использования
+    this.gl.enableVertexAttribArray(this.shaderProgram.vertexPositionAttribute);
   }
 
-  createScene() {
-    this.scene = new Scene();
+  // Функция создания шейдера
+  getShader(type,id) {
+    const source = document.getElementById(id).innerHTML;
+    // создаем шейдер по типу
+    const shader = this.gl.createShader(type);
+    // установка источника шейдера
+    this.gl.shaderSource(shader, source);
+    // компилируем шейдер
+    this.gl.compileShader(shader);
+
+    return shader;
   }
 
-  addCamera() {
-    this.camera = new PerspectiveCamera( 35, this.with / this.height, 1, 1000 );
-    this.camera.position.set( 65, 100, 300 );
-    this.controls = new OrbitControls( this.camera, this.renderer.domElement );
-    this.controls.addEventListener( 'change', () => this.render());
-    this.controls.minDistance = 20;
-    this.controls.maxDistance = 500;
-    this.controls.enablePan = false;
+  // установка буферов вершин и индексов
+  initBuffers() {
+    // установка буфера вершин
+    this.vertexBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vertexBuffer);
+    // массив координат вершин объекта
+    const triangleVertices = [
+      0.0,  0.5,  0.0,
+      -0.5, -0.5,  0.0,
+      0.5, -0.5,  0.0
+    ];
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(triangleVertices), this.gl.STATIC_DRAW);
+    // указываем кол-во точек
+    this.vertexBuffer.itemSize = 3;
+    this.vertexBuffer.numberOfItems = 3;
   }
 
-  addLight() {
-    const ambient = new AmbientLight( 0xffffff, 0.1 );
-    this.scene.add( ambient );
-    this.spotLight = new SpotLight( 0xffffff, 1 );
-    this.spotLight.position.set( 15, 40, 35 );
-    // this.spotLight.angle = Math.PI / 4;
-    // this.spotLight.penumbra = 0.05;
-    // this.spotLight.decay = 2;
-    // this.spotLight.distance = 200;
-    this.spotLight.castShadow = true;
-    // this.spotLight.shadow.mapSize.width = 1024;
-    // this.spotLight.shadow.mapSize.height = 1024;
-    // this.spotLight.shadow.camera.near = 10;
-    // this.spotLight.shadow.camera.far = 200;
-    this.scene.add( this.spotLight );
-    // this.lightHelper = new SpotLightHelper( this.spotLight );
-    // this.scene.add( this.lightHelper );
-    // this.shadowCameraHelper = new CameraHelper( this.spotLight.shadow.camera );
-    // this.scene.add( this.shadowCameraHelper );
-    // this.scene.add( new AxisHelper( 10 ) );
-  }
+  draw() {
+    // установка области отрисовки
+    this.gl.viewport(0, 0, this.gl.viewportWidth, this.gl.viewportHeight);
 
-  addMesh() {
-    const material = new MeshPhongMaterial( { color: 0x808080, dithering: true } );
-    const geometry = new BoxGeometry( 200, 1, 200 );
-    const mesh = new Mesh( geometry, material );
-    mesh.position.set( 0, - 40, 0 );
-    mesh.receiveShadow = true;
-    this.scene.add( mesh );
-  }
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-  addCube() {
-    const material = new MeshPhongMaterial( { color: 0x4080ff, dithering: true } );
-    const geometry = new BoxGeometry( 3, 1, 2 );
-    const mesh = new Mesh( geometry, material );
-    mesh.position.set(40, 2, 0);
-    mesh.castShadow = true;
-    this.scene.add( mesh );
-    this.controls.target.copy( mesh.position );
-    this.controls.update();
-  }
-
-  addSphere() {
-    const pyremideGeom = new TetrahedronGeometry(5);
-    const matPyr = new MeshBasicMaterial({color: 'red'});
-    this.pyra = new Mesh(pyremideGeom, matPyr);
-    this.pyra.castShadow = true;
-    this.pyra.position.set(10, 2, 0);
-    this.scene.add(this.pyra);
-  }
-
-  render() {
-     requestAnimationFrame(() => this.render());
-
-    if (this.pyra) {
-      this.pyra.rotation.x +=0.05;
-      this.pyra.rotation.z +=0.05;
-    }
-    
-
-    this.renderer.render( this.scene, this.camera );
+    // указываем, что каждая вершина имеет по три координаты (x, y, z)
+    this.gl.vertexAttribPointer(
+      this.shaderProgram.vertexPositionAttribute,
+      this.vertexBuffer.itemSize, this.gl.FLOAT, false, 0, 0
+    );
+    // отрисовка примитивов - треугольников
+    this.gl.drawArrays(this.gl.TRIANGLES, 0, this.vertexBuffer.numberOfItems);
   }
 
 }
 
-new AppThreeDemo();
+window.onload = () => new AppWebGlTrianthis();
