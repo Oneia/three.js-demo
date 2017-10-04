@@ -1,4 +1,3 @@
-import * as TrackballControls from 'three-trackballcontrols';
 import * as OrbitControls from 'three-orbitcontrols';
 import {
   BoxGeometry,
@@ -42,15 +41,6 @@ class AppThreeDemo {
     this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.renderer.gammaInput = true;
     this.renderer.gammaOutput = true;
-
-    // setInterval(() => {
-    //   this.pyra.rotation.x +=0.05;
-    //   this.pyra.rotation.z +=0.05;
-    //   this.renderer.render( this.scene, this.camera );
-    //   console.log('test');
-    // },40);
-
-
 
     document.body.appendChild( this.renderer.domElement );
   }
@@ -121,11 +111,10 @@ class AppThreeDemo {
   }
 
   render() {
-     requestAnimationFrame(() => this.render());
 
     if (this.pyra) {
-      this.pyra.rotation.x +=0.05;
-      this.pyra.rotation.z +=0.05;
+      this.pyra.rotation.x +=0.005;
+      this.pyra.rotation.z +=0.005;
     }
     
 
