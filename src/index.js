@@ -112,11 +112,12 @@ class AppThreeDemo {
 
   render() {
 
-    if (this.pyra) {
-      this.pyra.rotation.x +=0.005;
-      this.pyra.rotation.z +=0.005;
-    }
-    
+    // requestAnimationFrame(() => this.render());
+    //
+    // if (this.pyra) {
+    //   this.pyra.rotation.x +=0.05;
+    //   this.pyra.rotation.z +=0.05;
+    // }
 
     this.renderer.render( this.scene, this.camera );
   }
