@@ -28,7 +28,7 @@ class AppThreeDemo {
     this.addLight();
     this.addMesh();
     this.addCube();
-    this.addSphere();
+    this.addPyremide();
 
     this.render();
   }
@@ -101,7 +101,7 @@ class AppThreeDemo {
     this.controls.update();
   }
 
-  addSphere() {
+  addPyremide() {
     const pyremideGeom = new TetrahedronGeometry(5);
     const matPyr = new MeshBasicMaterial({color: 'red'});
     this.pyra = new Mesh(pyremideGeom, matPyr);
